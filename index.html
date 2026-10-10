@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Vêtements">
+<meta name="theme-color" content="#EEF1EC">
+<title>Achats vêtements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1EC; --surface:#FFFFFF; --ink:#1C2420; --muted:#5F6E65; --line:#D5DCD4; --soft:#E2E8E1;
+  --accent:#B8325A; --on-accent:#FFFFFF; --red:#B8325A; --warn-bg:#F6E9C9; --warn-ink:#5A4512;
+  --c0:#4A6FA5; --c1:#3E6B4F; --c2:#B8325A; --c3:#7A5A3A; --c4:#C08A2E;
+  --c5:#2F7F7A; --c6:#D0703F; --c7:#7B5BA6; --c8:#A0577E; --c9:#8F8A6E;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#121815; --surface:#1B231F; --ink:#E7ECE8; --muted:#97A59C; --line:#2C3732; --soft:#232D28;
+    --accent:#E46D90; --on-accent:#1B0B11; --red:#E46D90; --warn-bg:#3A3220; --warn-ink:#E8D29A;
+    --c0:#7C9DD0; --c1:#6FA683; --c2:#E46D90; --c3:#B88E66; --c4:#D9A84E;
+    --c5:#5FB3AD; --c6:#E8895E; --c7:#A88BD0; --c8:#CC88AC; --c9:#B8A77A;
+    color-scheme:dark;
+  }
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;line-height:1.45;font-size:16px;-webkit-text-size-adjust:100%}
+main{max-width:560px;margin:0 auto;padding:18px 16px 56px}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+[hidden]{display:none!important}
+.input,select,input[type=text],input[type=number],input[type=date]{
+  width:100%;padding:12px 13px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:16px;min-height:48px}
+
+/* Bandeau bilan */
+.head-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.head-top h1{font-size:1.05rem;font-weight:500;color:var(--muted);margin:0}
+.head-top select{width:auto;min-height:40px;padding:6px 12px;font-weight:700}
+.total{font-size:clamp(2.8rem,13vw,4.2rem);font-weight:800;letter-spacing:-.03em;font-variation-settings:"opsz" 96;line-height:1;margin:14px 0 4px}
+.total-sub{color:var(--muted);font-size:.95rem;margin:0 0 12px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat span{display:block;color:var(--muted);font-size:.88rem}
+.stat b{font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
+.bar{display:flex;height:34px;border-radius:10px;overflow:hidden;background:var(--soft);gap:2px}
+.bar.empty{border:2px dashed var(--line);background:transparent}
+.bar span{display:block;height:100%}
+.legend{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:.88rem}
+.legend li{display:flex;align-items:center;gap:8px;min-width:0}
+.legend .lab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legend em{font-style:normal;margin-left:auto;font-weight:500;white-space:nowrap}
+.dot{width:12px;height:12px;border-radius:4px;flex:none;display:inline-block}
+
+/* Onglets */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);margin:26px 0 18px;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;padding:12px 4px;cursor:pointer;color:var(--muted);font-weight:500;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+h2{font-size:1.1rem;font-weight:700;margin:26px 0 10px}
+
+/* Saisie */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.full{grid-column:1/-1}
+label.l{display:block;font-weight:500;margin-bottom:8px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
+.seg input:checked+label{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.seg input:focus-visible+label{outline:3px solid var(--accent);outline-offset:2px}
+.seg.big label{flex:1;justify-content:center;padding:12px;font-weight:700}
+#famt{font-size:1.5rem;font-weight:700}
+.check{display:flex;align-items:center;gap:8px}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+.btn{min-height:52px;border:0;border-radius:12px;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:1.05rem;cursor:pointer;padding:0 16px}
+.btn.ghost{min-height:44px;font-size:1rem;font-weight:500;background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{min-height:44px;font-size:1rem;font-weight:500;background:var(--surface);color:var(--red);border:1px solid var(--line)}
+.actions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+.actions .btn{flex:1}
+.editing{background:var(--warn-bg);color:var(--warn-ink);border-radius:10px;padding:8px 12px;font-size:.92rem;margin-bottom:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+/* Onglets personne */
+.ptotal{font-size:2.4rem;font-weight:800;letter-spacing:-.02em;line-height:1}
+.psub{color:var(--muted);font-size:.92rem;margin-top:6px}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end;height:110px}
+.mcol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px}
+.mbar{width:100%;background:var(--accent);border-radius:4px 4px 0 0}
+.mbar.zero{background:var(--line)}
+.mlab{font-size:.7rem;color:var(--muted)}
+.mval{font-size:.62rem;color:var(--muted);white-space:nowrap}
+.row{display:grid;grid-template-columns:1fr auto;gap:3px 10px;margin-bottom:10px}
+.row .v{text-align:right;font-weight:500}
+.row .track{grid-column:1/-1;height:8px;background:var(--soft);border-radius:4px;overflow:hidden}
+.row .fill{height:100%}
+.month-h{font-size:.9rem;font-weight:500;color:var(--muted);margin:18px 0 6px;display:flex;justify-content:space-between}
+.item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:2px 10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
+.item .dot{grid-row:1/3}
+.item .t{font-weight:500}
+.item .m{grid-column:2/4;font-size:.85rem;color:var(--muted)}
+.item .p{font-weight:700;text-align:right}
+.item.ret .p{text-decoration:line-through;color:var(--muted)}
+.tag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:999px;border:1px solid var(--line);margin-left:4px;color:var(--muted)}
+.empty{color:var(--muted);padding:16px 0}
+.foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:32px}
+.foot .btn{flex:1}
+.note{font-size:.85rem;color:var(--muted);margin-top:10px}
+/* Compteurs d'articles */
+.counters{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 12px}
+.ctr{display:grid;grid-template-columns:auto 1fr auto auto auto;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.ctr:last-child{border-bottom:0}
+.ctr button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-size:1.3rem;line-height:1;cursor:pointer}
+.ctr button:disabled{opacity:.35;cursor:default}
+.ctr output{min-width:1.6em;text-align:center;font-weight:700;font-size:1.1rem}
+.ctr.on .lab{font-weight:700}
+.count-sum{color:var(--muted);font-size:.9rem;margin-top:8px}
+.split-bar span:first-child{background:var(--accent)} .split-bar span:last-child{background:var(--c7)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="head-top">
+      <h1>Achats vêtements</h1>
+      <select id="year" aria-label="Année"></select>
+    </div>
+    <div class="total" id="hTotal">0 €</div>
+    <p class="total-sub" id="hProj"></p>
+    <div class="split">
+      <div class="stat"><span><i class="dot" style="background:var(--accent)"></i> Moi</span><b id="hMoi">0 €</b></div>
+      <div class="stat"><span><i class="dot" style="background:var(--c7)"></i> Raphaëlle</span><b id="hRaph">0 €</b></div>
+    </div>
+    <div class="bar split-bar" id="hBar" role="img"></div>
+    <ul class="legend" id="hLegend"></ul>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="saisie" aria-selected="true">Saisie</button>
+    <button role="tab" data-tab="Moi" aria-selected="false">Moi</button>
+    <button role="tab" data-tab="Raphaëlle" aria-selected="false">Raphaëlle</button>
+  </nav>
+
+  <!-- Onglet Saisie -->
+  <section class="panel" id="p-saisie">
+    <form id="form" autocomplete="off">
+      <div class="editing" id="editBanner" hidden>Modification d'un achat existant</div>
+      <input type="hidden" id="fid">
+      <div class="grid">
+        <div class="full"><label class="l">Pour</label><div class="seg big" id="fwho"></div></div>
+        <div><label class="l" for="fdate">Date</label><input type="date" id="fdate" required></div>
+        <div><label class="l" for="famt">Montant total (€)</label><input type="number" id="famt" step="0.01" min="0" inputmode="decimal" required></div>
+        <div class="full"><label class="l" for="fshop">Où c'est acheté</label><input type="text" id="fshop" list="shops" placeholder="Ex. Kiabi, Vinted, Decathlon…" required></div>
+        <div class="full">
+          <label class="l">Articles achetés</label>
+          <div class="counters" id="fitems"></div>
+          <div class="count-sum" id="countSum"></div>
+        </div>
+        <div class="full"><label class="l">Type d'achat</label><div class="seg" id="ftype"></div></div>
+        <div class="full"><label class="l" for="fdesc">Note (facultatif)</label><input type="text" id="fdesc" placeholder="Ex. rentrée, cadeau…"></div>
+        <div class="full"><label class="check"><input type="checkbox" id="fret"> Retourné / remboursé (exclu du total)</label></div>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn" id="saveBtn">Enregistrer</button>
+        <button type="button" class="btn ghost" id="cancelBtn" hidden>Annuler</button>
+        <button type="button" class="btn danger" id="delBtn" hidden>Supprimer</button>
+      </div>
+    </form>
+    <datalist id="shops"></datalist>
+  </section>
+
+  <!-- Onglet personne -->
+  <section class="panel" id="p-perso" hidden>
+    <div class="ptotal" id="pTotal">0 €</div>
+    <div class="psub" id="pSub"></div>
+    <h2>Par mois</h2>
+    <div class="months" id="pMonths"></div>
+    <h2>Articles achetés</h2>
+    <div id="pCat"></div>
+    <h2>Par lieu d'achat</h2>
+    <div id="pShop"></div>
+    <h2>Par type d'achat</h2>
+    <div id="pType"></div>
+    <h2>Achats</h2>
+    <div id="pList"></div>
+
+    <div class="foot">
+      <button class="btn ghost" id="exportBtn">Exporter (sauvegarde)</button>
+      <button class="btn ghost" id="importBtn">Importer</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+    </div>
+    <p class="note">Les données restent sur ce téléphone. Exporte régulièrement une sauvegarde dans Fichiers.</p>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const KEY = "suivi-vetements-v1";
+const CATS = [
+  ["Hauts","var(--c0)"],["Pantalons","var(--c1)"],["Shorts","var(--c2)"],["Manteaux & vestes","var(--c3)"],
+  ["Pulls & gilets","var(--c4)"],["Chaussures","var(--c5)"],["Sous-vêtements","var(--c6)"],
+  ["Nuit","var(--c8)"],["Sport","var(--c7)"],["Autre","var(--c9)"]
+];
+const CATN = CATS.map(c=>c[0]), COL = Object.fromEntries(CATS);
+const WHO = ["Moi","Raphaëlle"];
+const TYPES = ["Plein tarif","Soldes / promo","Seconde main"];
+const MOIS = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+const MOIS_LONG = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+const $ = id => document.getElementById(id);
+const eur = n => n.toLocaleString("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:Math.round(n)===n?0:2});
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pl = (n,w) => `${n} ${w}${n>1?"s":""}`;
+
+/* Données : un achat = montant total + nombre d'articles par type */
+const RENAME = {"Pantalons & jupes":"Pantalons","Robes":"Autre","Accessoires":"Autre","Sous-vêtements & nuit":"Sous-vêtements"};
+function migrate(arr){
+  return arr.filter(Boolean).map(d=>{
+    if(!d.items){ d.items = {}; if(d.cat) d.items[d.cat]=1; delete d.cat; }
+    const it={}; for(const [k,v] of Object.entries(d.items)){ const n=RENAME[k]||k; it[n]=(it[n]||0)+v; }
+    d.items=it; return d;
+  });
+}
+let data = load(), tab = "saisie", counts = {}, backTo = null;
+function load(){ try{ return migrate(JSON.parse(localStorage.getItem(KEY)) || []); }catch(e){ return []; } }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){ alert("Enregistrement impossible sur cet appareil."); } }
+const nItems = d => Object.values(d.items||{}).reduce((a,b)=>a+b,0);
+const itemsText = d => CATN.filter(c=>d.items[c]).map(c=>`${c} ×${d.items[c]}`).join(", ");
+
+function seg(el,name,opts){
+  el.innerHTML = opts.map((o,i)=>`<input type="radio" name="${name}" id="${name}${i}" value="${esc(o)}"${i===0?" checked":""}><label for="${name}${i}">${esc(o)}</label>`).join("");
+}
+seg($("fwho"),"who",WHO); seg($("ftype"),"type",TYPES);
+function radio(name,val){ const r=[...document.querySelectorAll(`input[name="${name}"]`)]; (r.find(x=>x.value===val)||r[0]).checked=true; }
+function radioVal(name){ return document.querySelector(`input[name="${name}"]:checked`).value; }
+
+/* Compteurs */
+$("fitems").innerHTML = CATS.map(([c,col],i)=>`<div class="ctr" data-cat="${esc(c)}">
+  <i class="dot" style="background:${col}"></i><span class="lab">${esc(c)}</span>
+  <button type="button" data-d="-1" aria-label="Retirer ${esc(c)}">−</button><output>0</output>
+  <button type="button" data-d="1" aria-label="Ajouter ${esc(c)}">+</button></div>`).join("");
+$("fitems").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  const c=b.closest(".ctr").dataset.cat;
+  counts[c]=Math.max(0,(counts[c]||0)+ +b.dataset.d); paintCounts();
+});
+function paintCounts(){
+  document.querySelectorAll(".ctr").forEach(r=>{
+    const n=counts[r.dataset.cat]||0;
+    r.querySelector("output").textContent=n; r.classList.toggle("on",n>0);
+    r.querySelector('[data-d="-1"]').disabled=!n;
+  });
+  const t=Object.values(counts).reduce((a,b)=>a+b,0);
+  $("countSum").textContent = t ? `${pl(t,"article")} dans cet achat` : "Touche + en face de chaque type acheté";
+}
+
+/* Années */
+function refreshYears(keep){
+  const s=new Set(data.map(d=>+d.date.slice(0,4))); s.add(new Date().getFullYear());
+  const y=keep||+$("year").value||new Date().getFullYear();
+  $("year").innerHTML=[...s].sort((a,b)=>b-a).map(v=>`<option>${v}</option>`).join("");
+  $("year").value=String(y);
+}
+const yearOf=()=>+$("year").value;
+const inYear=d=>+d.date.slice(0,4)===yearOf();
+const sum=arr=>arr.reduce((s,d)=>s+d.amt,0);
+function projection(total){
+  const now=new Date(), y=yearOf();
+  if(y!==now.getFullYear()||!total) return "";
+  const frac=(now-new Date(y,0,1))/(new Date(y+1,0,1)-new Date(y,0,1));
+  return frac>0.08?`Au rythme actuel : environ ${eur(Math.round(total/frac))} sur l'année`:"";
+}
+
+/* Bandeau */
+function renderHead(){
+  const c=data.filter(d=>inYear(d)&&!d.ret), total=sum(c);
+  const moi=sum(c.filter(d=>d.who==="Moi")), raph=sum(c.filter(d=>d.who==="Raphaëlle"));
+  $("hTotal").textContent=eur(total);
+  const art=c.reduce((a,d)=>a+nItems(d),0);
+  $("hProj").textContent=projection(total)||`${pl(art,"article")} en ${yearOf()}`;
+  $("hMoi").textContent=eur(moi); $("hRaph").textContent=eur(raph);
+  const bar=$("hBar"); bar.classList.toggle("empty",!total);
+  bar.innerHTML=total?`<span style="width:${moi/total*100}%"></span><span style="width:${raph/total*100}%"></span>`:"";
+  bar.setAttribute("aria-label",total?`Moi ${Math.round(moi/total*100)} %, Raphaëlle ${Math.round(raph/total*100)} %`:"Aucun achat");
+  $("hLegend").innerHTML=total?`<li><i class="dot" style="background:var(--accent)"></i><span class="lab">Moi</span><em>${Math.round(moi/total*100)} %</em></li>
+    <li><i class="dot" style="background:var(--c7)"></i><span class="lab">Raphaëlle</span><em>${Math.round(raph/total*100)} %</em></li>`
+    :`<li>Aucun achat enregistré en ${yearOf()}</li>`;
+}
+
+/* Onglet personne */
+function bars(el,entries,fmt,colorFn){
+  entries=entries.filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
+  const tot=entries.reduce((a,e)=>a+e[1],0);
+  if(!entries.length){ el.innerHTML=`<p class="empty">Rien pour l'instant.</p>`; return; }
+  el.innerHTML=entries.map(([n,v])=>`<div class="row"><span>${esc(n)}</span><span class="v">${fmt(v)}, ${Math.round(v/tot*100)} %</span>
+    <div class="track"><div class="fill" style="width:${v/tot*100}%;background:${colorFn?colorFn(n):"var(--accent)"}"></div></div></div>`).join("");
+}
+function renderPerson(who){
+  const items=data.filter(d=>inYear(d)&&d.who===who), c=items.filter(d=>!d.ret), total=sum(c);
+  const art=c.reduce((a,d)=>a+nItems(d),0);
+  $("pTotal").textContent=eur(total);
+  let sub=`${pl(c.length,"achat")}, ${pl(art,"article")} en ${yearOf()}`;
+  if(art) sub+=`<br>Environ ${eur(Math.round(total/art))} par article en moyenne`;
+  const p=projection(total); if(p) sub+=`<br>${p}`;
+  const r=items.filter(d=>d.ret); if(r.length) sub+=`<br>${pl(r.length,"retour")} exclu${r.length>1?"s":""} (${eur(sum(r))})`;
+  $("pSub").innerHTML=sub;
+
+  const pm=Array(12).fill(0); c.forEach(d=>pm[+d.date.slice(5,7)-1]+=d.amt);
+  const max=Math.max(...pm,1);
+  $("pMonths").innerHTML=pm.map((v,i)=>`<div class="mcol" title="${MOIS_LONG[i]} : ${eur(v)}"><span class="mval">${v?Math.round(v):""}</span>
+    <div class="mbar${v?"":" zero"}" style="height:${v?Math.max(v/max*76,4):2}px"></div><span class="mlab">${MOIS[i]}</span></div>`).join("");
+
+  const cnt={}; c.forEach(d=>{ for(const [k,v] of Object.entries(d.items)) cnt[k]=(cnt[k]||0)+v; });
+  bars($("pCat"),Object.entries(cnt),v=>pl(v,"article"),n=>COL[n]||"var(--c9)");
+  const g=k=>{ const m={}; c.forEach(d=>{ const key=d[k]||"Non précisé"; m[key]=(m[key]||0)+d.amt; }); return Object.entries(m); };
+  bars($("pShop"),g("shop"),eur);
+  bars($("pType"),g("type"),eur);
+
+  const shown=[...items].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!shown.length){ $("pList").innerHTML=`<p class="empty">Aucun achat. Ajoute-en un dans l'onglet Saisie.</p>`; return; }
+  let html="", cur="";
+  shown.forEach(d=>{
+    const m=d.date.slice(0,7);
+    if(m!==cur){ cur=m; html+=`<div class="month-h"><span>${MOIS_LONG[+m.slice(5)-1]}</span><span>${eur(sum(shown.filter(x=>x.date.startsWith(m)&&!x.ret)))}</span></div>`; }
+    const dd=new Date(d.date+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+    const main=CATN.find(k=>d.items[k]);
+    html+=`<div class="item${d.ret?" ret":""}" tabindex="0" data-id="${d.id}"><i class="dot" style="background:${COL[main]||"var(--c9)"}"></i>
+      <span class="t">${esc(d.shop||"Lieu non précisé")}${d.ret?`<span class="tag">retourné</span>`:""}</span><span class="p">${eur(d.amt)}</span>
+      <span class="m">${dd}, ${esc(itemsText(d))}${d.type!=="Plein tarif"?", "+esc(d.type).toLowerCase():""}${d.desc?", "+esc(d.desc):""}</span></div>`;
+  });
+  $("pList").innerHTML=html;
+}
+
+function render(){
+  renderHead();
+  if(tab!=="saisie") renderPerson(tab);
+  $("shops").innerHTML=[...new Set(data.map(d=>d.shop).filter(Boolean))].sort().map(s=>`<option value="${esc(s)}">`).join("");
+}
+
+/* Onglets */
+function showTab(t){
+  tab=t;
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  $("p-saisie").hidden=t!=="saisie"; $("p-perso").hidden=t==="saisie";
+  render();
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+/* Saisie */
+function resetForm(keepWho){
+  const who=keepWho?radioVal("who"):WHO[0];
+  $("form").reset(); $("fid").value="";
+  $("fdate").value=new Date().toISOString().slice(0,10);
+  radio("who",who); radio("type",TYPES[0]); counts={}; paintCounts();
+  $("editBanner").hidden=true; $("cancelBtn").hidden=true; $("delBtn").hidden=true;
+  $("saveBtn").textContent="Enregistrer";
+}
+function editItem(d){
+  showTab("saisie");
+  $("fid").value=d.id; $("fdate").value=d.date; $("famt").value=d.amt;
+  $("fshop").value=d.shop||""; $("fdesc").value=d.desc||"";
+  radio("who",d.who); radio("type",d.type); $("fret").checked=!!d.ret;
+  counts={...d.items}; paintCounts();
+  $("editBanner").hidden=false; $("cancelBtn").hidden=false; $("delBtn").hidden=false;
+  $("saveBtn").textContent="Enregistrer les modifications";
+  window.scrollTo({top:$("p-saisie").offsetTop-20,behavior:"smooth"});
+}
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("show"),2000); }
+function back(){ if(backTo){ const t=backTo; backTo=null; showTab(t); } else render(); }
+
+$("form").onsubmit=e=>{
+  e.preventDefault();
+  const amt=parseFloat(String($("famt").value).replace(",","."));
+  if(isNaN(amt)){ $("famt").focus(); return; }
+  const items={}; for(const [k,v] of Object.entries(counts)) if(v>0) items[k]=v;
+  const n=Object.values(items).reduce((a,b)=>a+b,0);
+  if(!n){ toast("Indique au moins un article"); $("fitems").scrollIntoView({behavior:"smooth",block:"center"}); return; }
+  const editing=!!$("fid").value;
+  const d={
+    id:$("fid").value||Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    date:$("fdate").value, amt:Math.round(amt*100)/100, who:radioVal("who"), items,
+    type:radioVal("type"), shop:$("fshop").value.trim(), desc:$("fdesc").value.trim(), ret:$("fret").checked
+  };
+  const i=data.findIndex(x=>x.id===d.id);
+  if(i>=0) data[i]=d; else data.push(d);
+  save(); refreshYears(+d.date.slice(0,4)); resetForm(true);
+  toast(editing?"Modifications enregistrées":`Achat enregistré : ${eur(d.amt)}, ${pl(n,"article")}, ${d.who}`);
+  back();
+};
+$("cancelBtn").onclick=()=>{ resetForm(); back(); };
+$("delBtn").onclick=()=>{
+  if(!confirm("Supprimer cet achat ?")) return;
+  data=data.filter(d=>d.id!==$("fid").value); save(); resetForm(); refreshYears(); toast("Achat supprimé"); back();
+};
+function openFromList(e){ const it=e.target.closest(".item"); if(!it) return; backTo=tab; editItem(data.find(d=>d.id===it.dataset.id)); }
+$("pList").addEventListener("click",openFromList);
+$("pList").addEventListener("keydown",e=>{ if(e.key==="Enter") openFromList(e); });
+$("year").onchange=render;
+
+/* Sauvegarde */
+$("exportBtn").onclick=async()=>{
+  const name=`vetements-${new Date().toISOString().slice(0,10)}.json`;
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:"application/json"});
+  const file=new File([blob],name,{type:"application/json"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],title:name}); return; }catch(e){ if(e.name==="AbortError") return; }
+  }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+};
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const arr=JSON.parse(await f.text()); if(!Array.isArray(arr)) throw 0;
+    const ids=new Set(data.map(d=>d.id)); let n=0;
+    migrate(arr).forEach(d=>{ if(d.id&&d.date&&typeof d.amt==="number"&&!ids.has(d.id)){ data.push(d); n++; } });
+    save(); refreshYears(); render(); toast(`${pl(n,"achat")} importé${n>1?"s":""}`);
+  }catch(err){ alert("Fichier non reconnu : choisis un export de cette appli (.json)."); }
+  e.target.value="";
+};
+
+save(); resetForm(); refreshYears(); render();
+</script>
+</body>
+</html>
