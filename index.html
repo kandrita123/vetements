@@ -137,6 +137,7 @@ label.l{display:block;font-weight:500;margin-bottom:8px}
     </div>
     <div class="total" id="hTotal">0 €</div>
     <p class="total-sub" id="hProj"></p>
+    <p class="total-sub" id="hNeed" hidden></p>
     <div class="split">
       <div class="stat"><span><i class="dot" style="background:var(--accent)"></i> Moi</span><b id="hMoi">0 €</b></div>
       <div class="stat"><span><i class="dot" style="background:var(--c7)"></i> Raphaëlle</span><b id="hRaph">0 €</b></div>
@@ -159,8 +160,8 @@ label.l{display:block;font-weight:500;margin-bottom:8px}
       <div class="grid">
         <div class="full"><label class="l">Pour</label><div class="seg big" id="fwho"></div></div>
         <div><label class="l" for="fdate">Date</label><input type="date" id="fdate" required></div>
-        <div><label class="l" for="famt">Montant total (€)</label><input type="number" id="famt" step="0.01" min="0" inputmode="decimal" required></div>
-        <div class="full"><label class="l" for="fshop">Où c'est acheté</label><input type="text" id="fshop" list="shops" placeholder="Ex. Kiabi, Vinted, Decathlon…" required></div>
+        <div><label class="l" for="famt" id="famtLab">Montant total (€)</label><input type="number" id="famt" step="0.01" min="0" inputmode="decimal" required></div>
+        <div class="full"><label class="l" for="fshop" id="fshopLab">Où c'est acheté</label><input type="text" id="fshop" list="shops" placeholder="Ex. Kiabi, Vinted, Decathlon…" required></div>
         <div class="full">
           <label class="l">Articles achetés</label>
           <div class="counters" id="fitems"></div>
@@ -185,7 +186,7 @@ label.l{display:block;font-weight:500;margin-bottom:8px}
     <div class="psub" id="pSub"></div>
     <h2>Par mois</h2>
     <div class="months" id="pMonths"></div>
-    <h2>Articles achetés</h2>
+    <h2>Articles par type (achats et cadeaux)</h2>
     <div id="pCat"></div>
     <h2>Par lieu d'achat</h2>
     <div id="pShop"></div>
@@ -213,7 +214,8 @@ const CATS = [
 ];
 const CATN = CATS.map(c=>c[0]), COL = Object.fromEntries(CATS);
 const WHO = ["Moi","Raphaëlle"];
-const TYPES = ["Plein tarif","Soldes / promo","Seconde main"];
+const TYPES = ["Plein tarif","Soldes / promo","Seconde main","Cadeau"];
+const isGift = d => d.type==="Cadeau";
 const MOIS = ["J","F","M","A","M","J","J","A","S","O","N","D"];
 const MOIS_LONG = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 const $ = id => document.getElementById(id);
@@ -242,6 +244,13 @@ function seg(el,name,opts){
 seg($("fwho"),"who",WHO); seg($("ftype"),"type",TYPES);
 function radio(name,val){ const r=[...document.querySelectorAll(`input[name="${name}"]`)]; (r.find(x=>x.value===val)||r[0]).checked=true; }
 function radioVal(name){ return document.querySelector(`input[name="${name}"]:checked`).value; }
+function paintType(){
+  const g=radioVal("type")==="Cadeau";
+  $("famtLab").textContent=g?"Valeur estimée (€)":"Montant total (€)";
+  $("fshopLab").textContent=g?"Offert par (facultatif)":"Où c'est acheté";
+  $("fshop").required=!g; $("fshop").placeholder=g?"Ex. Papa et Maman":"Ex. Kiabi, Vinted, Decathlon…";
+}
+$("ftype").addEventListener("change",paintType);
 
 /* Compteurs */
 $("fitems").innerHTML = CATS.map(([c,col],i)=>`<div class="ctr" data-cat="${esc(c)}">
@@ -282,10 +291,13 @@ function projection(total){
 
 /* Bandeau */
 function renderHead(){
-  const c=data.filter(d=>inYear(d)&&!d.ret), total=sum(c);
+  const all=data.filter(d=>inYear(d)&&!d.ret), c=all.filter(d=>!isGift(d)), total=sum(c);
+  const gifts=sum(all.filter(isGift));
+  $("hNeed").hidden=!gifts;
+  $("hNeed").innerHTML=gifts?`Besoin total avec cadeaux : <b>${eur(total+gifts)}</b> (dont ${eur(gifts)} offerts)`:"";
   const moi=sum(c.filter(d=>d.who==="Moi")), raph=sum(c.filter(d=>d.who==="Raphaëlle"));
   $("hTotal").textContent=eur(total);
-  const art=c.reduce((a,d)=>a+nItems(d),0);
+  const art=all.reduce((a,d)=>a+nItems(d),0);
   $("hProj").textContent=projection(total)||`${pl(art,"article")} en ${yearOf()}`;
   $("hMoi").textContent=eur(moi); $("hRaph").textContent=eur(raph);
   const bar=$("hBar"); bar.classList.toggle("empty",!total);
@@ -305,11 +317,13 @@ function bars(el,entries,fmt,colorFn){
     <div class="track"><div class="fill" style="width:${v/tot*100}%;background:${colorFn?colorFn(n):"var(--accent)"}"></div></div></div>`).join("");
 }
 function renderPerson(who){
-  const items=data.filter(d=>inYear(d)&&d.who===who), c=items.filter(d=>!d.ret), total=sum(c);
-  const art=c.reduce((a,d)=>a+nItems(d),0);
+  const items=data.filter(d=>inYear(d)&&d.who===who), kept=items.filter(d=>!d.ret);
+  const c=kept.filter(d=>!isGift(d)), gf=kept.filter(isGift), total=sum(c);
+  const art=c.reduce((a,d)=>a+nItems(d),0), gart=gf.reduce((a,d)=>a+nItems(d),0);
   $("pTotal").textContent=eur(total);
   let sub=`${pl(c.length,"achat")}, ${pl(art,"article")} en ${yearOf()}`;
-  if(art) sub+=`<br>Environ ${eur(Math.round(total/art))} par article en moyenne`;
+  if(art) sub+=`<br>Environ ${eur(Math.round(total/art))} par article acheté en moyenne`;
+  if(gf.length) sub+=`<br>Cadeaux : ${pl(gart,"article")}, valeur ${eur(sum(gf))}<br>Besoin total avec cadeaux : <b>${eur(total+sum(gf))}</b>`;
   const p=projection(total); if(p) sub+=`<br>${p}`;
   const r=items.filter(d=>d.ret); if(r.length) sub+=`<br>${pl(r.length,"retour")} exclu${r.length>1?"s":""} (${eur(sum(r))})`;
   $("pSub").innerHTML=sub;
@@ -319,7 +333,7 @@ function renderPerson(who){
   $("pMonths").innerHTML=pm.map((v,i)=>`<div class="mcol" title="${MOIS_LONG[i]} : ${eur(v)}"><span class="mval">${v?Math.round(v):""}</span>
     <div class="mbar${v?"":" zero"}" style="height:${v?Math.max(v/max*76,4):2}px"></div><span class="mlab">${MOIS[i]}</span></div>`).join("");
 
-  const cnt={}; c.forEach(d=>{ for(const [k,v] of Object.entries(d.items)) cnt[k]=(cnt[k]||0)+v; });
+  const cnt={}; kept.forEach(d=>{ for(const [k,v] of Object.entries(d.items)) cnt[k]=(cnt[k]||0)+v; });
   bars($("pCat"),Object.entries(cnt),v=>pl(v,"article"),n=>COL[n]||"var(--c9)");
   const g=k=>{ const m={}; c.forEach(d=>{ const key=d[k]||"Non précisé"; m[key]=(m[key]||0)+d.amt; }); return Object.entries(m); };
   bars($("pShop"),g("shop"),eur);
@@ -330,12 +344,12 @@ function renderPerson(who){
   let html="", cur="";
   shown.forEach(d=>{
     const m=d.date.slice(0,7);
-    if(m!==cur){ cur=m; html+=`<div class="month-h"><span>${MOIS_LONG[+m.slice(5)-1]}</span><span>${eur(sum(shown.filter(x=>x.date.startsWith(m)&&!x.ret)))}</span></div>`; }
+    if(m!==cur){ cur=m; html+=`<div class="month-h"><span>${MOIS_LONG[+m.slice(5)-1]}</span><span>${eur(sum(shown.filter(x=>x.date.startsWith(m)&&!x.ret&&!isGift(x))))}</span></div>`; }
     const dd=new Date(d.date+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
     const main=CATN.find(k=>d.items[k]);
-    html+=`<div class="item${d.ret?" ret":""}" tabindex="0" data-id="${d.id}"><i class="dot" style="background:${COL[main]||"var(--c9)"}"></i>
-      <span class="t">${esc(d.shop||"Lieu non précisé")}${d.ret?`<span class="tag">retourné</span>`:""}</span><span class="p">${eur(d.amt)}</span>
-      <span class="m">${dd}, ${esc(itemsText(d))}${d.type!=="Plein tarif"?", "+esc(d.type).toLowerCase():""}${d.desc?", "+esc(d.desc):""}</span></div>`;
+    html+=`<div class="item${d.ret||isGift(d)?" ret":""}" tabindex="0" data-id="${d.id}"><i class="dot" style="background:${COL[main]||"var(--c9)"}"></i>
+      <span class="t">${esc(d.shop||(isGift(d)?"Cadeau":"Lieu non précisé"))}${d.ret?`<span class="tag">retourné</span>`:""}${isGift(d)?`<span class="tag">cadeau</span>`:""}</span><span class="p">${eur(d.amt)}</span>
+      <span class="m">${dd}, ${esc(itemsText(d))}${d.type!=="Plein tarif"&&!isGift(d)?", "+esc(d.type).toLowerCase():""}${d.desc?", "+esc(d.desc):""}</span></div>`;
   });
   $("pList").innerHTML=html;
 }
@@ -360,7 +374,7 @@ function resetForm(keepWho){
   const who=keepWho?radioVal("who"):WHO[0];
   $("form").reset(); $("fid").value="";
   $("fdate").value=new Date().toISOString().slice(0,10);
-  radio("who",who); radio("type",TYPES[0]); counts={}; paintCounts();
+  radio("who",who); radio("type",TYPES[0]); paintType(); counts={}; paintCounts();
   $("editBanner").hidden=true; $("cancelBtn").hidden=true; $("delBtn").hidden=true;
   $("saveBtn").textContent="Enregistrer";
 }
@@ -368,7 +382,7 @@ function editItem(d){
   showTab("saisie");
   $("fid").value=d.id; $("fdate").value=d.date; $("famt").value=d.amt;
   $("fshop").value=d.shop||""; $("fdesc").value=d.desc||"";
-  radio("who",d.who); radio("type",d.type); $("fret").checked=!!d.ret;
+  radio("who",d.who); radio("type",d.type); paintType(); $("fret").checked=!!d.ret;
   counts={...d.items}; paintCounts();
   $("editBanner").hidden=false; $("cancelBtn").hidden=false; $("delBtn").hidden=false;
   $("saveBtn").textContent="Enregistrer les modifications";
@@ -393,7 +407,7 @@ $("form").onsubmit=e=>{
   const i=data.findIndex(x=>x.id===d.id);
   if(i>=0) data[i]=d; else data.push(d);
   save(); refreshYears(+d.date.slice(0,4)); resetForm(true);
-  toast(editing?"Modifications enregistrées":`Achat enregistré : ${eur(d.amt)}, ${pl(n,"article")}, ${d.who}`);
+  toast(editing?"Modifications enregistrées":`${isGift(d)?"Cadeau":"Achat"} enregistré : ${eur(d.amt)}, ${pl(n,"article")}, ${d.who}`);
   back();
 };
 $("cancelBtn").onclick=()=>{ resetForm(); back(); };
